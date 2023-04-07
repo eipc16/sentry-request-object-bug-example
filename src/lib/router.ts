@@ -2,8 +2,8 @@ import express from 'express';
 
 const router = express.Router();
 
-router.get('/hello', async (_req, res) => {
-  res.status(200).json({ message: 'Hello World!' });
+router.post('/error', async (_req, res) => {
+  res.status(502).json({ message: 'Failed!' });
 });
 
 export default router;

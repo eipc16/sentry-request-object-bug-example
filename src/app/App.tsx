@@ -1,55 +1,67 @@
-import React, { useState } from 'react';
-import logo from './logo.svg';
-import styles from './App.module.css';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
-import Welcome from './components/Welcome/Welcome';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { HttpClient as HttpClientIntegration } from '@sentry/integrations';
+import * as Sentry from '@sentry/react';
+import { Hook, Console, Decode } from 'console-feed';
+
+Sentry.init({
+  dsn: 'https://123@123.ingest.sentry.io/123',
+  debug: true,
+  release: 'local-test',
+  environment: 'local-test',
+  integrations: [new HttpClientIntegration()],
+});
 
 function App(): JSX.Element {
-  const [count, setCount] = useState<number>(0);
+  const [logs, setLogs] = useState<ReturnType<typeof Decode>[]>([]);
+
+  useEffect(() => {
+    Hook(window.console, (log) => {
+      setLogs((currentLogs) => [Decode(log), ...currentLogs]);
+    });
+  }, []);
 
   return (
     <Router>
-      <div className={styles.App}>
-        <header className={styles['App-header']}>
-          <img src={logo} className={styles['App-logo']} alt="logo" />
-          <Welcome />
-          <p>
-            <button onClick={() => setCount((count) => count + 1)}>
-              count is: {count}
-            </button>
-          </p>
-          <p>
-            Edit <code>App.tsx</code> and save to test HMR updates.
-          </p>
-          <p>
-            <a
-              className={styles['App-link']}
-              href="https://reactjs.org"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learn React
-            </a>
-            {' | '}
-            <a
-              className={styles['App-link']}
-              href="https://vitejs.dev/guide/features.html"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Vite Docs
-            </a>
-          </p>
-          <Switch>
-            <Route path="/about">
-              <main>About</main>
-            </Route>
-            <Route path="/">
-              <main>Home</main>
-            </Route>
-          </Switch>
-        </header>
-      </div>
+      <main>
+        <div
+          style={{
+            display: 'flex',
+            height: '100px',
+            width: '100%',
+            justifyContent: 'space-around',
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              fetch('/api/error', {
+                method: 'post',
+                body: JSON.stringify({ property: 'value' }),
+              });
+            }}
+          >
+            Simple Fetch
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              fetch(
+                new Request('/api/error', {
+                  method: 'post',
+                  body: JSON.stringify({ property: 'value' }),
+                })
+              );
+            }}
+          >
+            Fetch with Request Object
+          </button>
+        </div>
+        <div style={{ padding: '25px' }}>
+          <Console logs={logs as any} variant="dark" />
+        </div>
+      </main>
     </Router>
   );
 }
